@@ -29,11 +29,12 @@ func ReadConfig(configFilePath string) (config Config) {
 	} else {
 		configData, err = ioutil.ReadFile(configFilePath)
 		if err != nil {
-			if err == os.ErrNotExist {
+			if os.IsNotExist(err) {
 				logger.Println("Config file does not exists, using default config.")
 				configData = []byte(defaultConfig)
 			} else {
-				panic(err)
+				logger.Println(err)
+				//panic(err)
 			}
 		}
 	}

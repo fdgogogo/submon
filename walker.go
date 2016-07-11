@@ -89,7 +89,7 @@ func WalkDir(dir string) {
 
 func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord ScannedFile) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(path)))
-	DB.First(&fileRecord, path)
+	DB.Where("id = ?", hash).First(&fileRecord)
 
 	if fileRecord == (ScannedFile{}) {
 		fileRecord = ScannedFile{

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
@@ -25,8 +26,19 @@ var (
 	err_logger = log.New(os.Stderr, "", 0)
 )
 
-var DB gorm.DB
+var DB *gorm.DB
 var AppConfig Config
+
+func init() {
+	var err error
+	DB, err = gorm.Open("sqlite3", "test.sqlite")
+	//DB.LogMode(true)
+	if err != nil {
+		panic("failed to connect database")
+	}
+	DB.AutoMigrate(&ScannedFile{})
+
+}
 
 func main() {
 	app.HelpFlag.Short('h')
