@@ -1,23 +1,32 @@
 package main
 
-import ()
 import (
+	"github.com/jinzhu/gorm"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"log"
 	"os"
 )
 
 var (
-	app = kingpin.New("shooter-subtitle-worker", "").Version("0.1")
+	app  = kingpin.New("shooter-subtitle-worker", "").Version("0.1")
+	lang = app.Flag("lang", "language, choice: chn, eng").String()
 
-	download = app.Command("download", "Download subtitle for specific file")
-	download_file = download.Arg("file", "target file path").Required().String()
-	download_lang = download.Flag("lang", "language, choice: chn, eng").Default("chn").String()
+	download     = app.Command("download", "Download subtitle for specific file")
+	downloadFile = download.Arg("file", "target file path").Required().String()
 
-	watch = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
-	watch_dir = watch.Flag("dir", "target dir").Short('d').String()
-	config_file = watch.Flag("config-file", "config file path").String()
-	example_config = app.Command("example_config", "show example configuration")
+	watch         = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
+	watchDir      = watch.Flag("dir", "target dir").Short('d').String()
+	configFile    = watch.Flag("config-file", "config file path").Default("~/.config/shooter-subtitle-worker/config.yaml").String()
+	exampleConfig = app.Command("example_config", "show example configuration")
 )
+
+var (
+	logger     = log.New(os.Stdout, "", 0)
+	err_logger = log.New(os.Stderr, "", 0)
+)
+
+var DB gorm.DB
+var AppConfig Config
 
 func main() {
 	app.HelpFlag.Short('h')
@@ -25,16 +34,20 @@ func main() {
 
 	parsed := kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	AppConfig = ReadConfig(*configFile)
+	if *lang != "" {
+		AppConfig.Lang = *lang
+	}
+
 	switch parsed {
 
 	case download.FullCommand():
-		RequestSubtitle(*download_file, *download_lang)
+		RequestSubtitle(*downloadFile)
 
 	case watch.FullCommand():
-		ReadConfig("./config.yaml")
-		WalkDir(*watch_dir)
+		WalkDir(*watchDir)
 
-	case example_config.FullCommand():
+	case exampleConfig.FullCommand():
 		PrintDefaultConfig()
 
 	default:

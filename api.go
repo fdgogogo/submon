@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net/http"
 	"net/url"
@@ -24,10 +23,7 @@ type Subinfo struct {
 	Files []Fileinfo // 包含文件信息的Array。 注：一个字幕可能会包含多个字幕文件，例如：idx+sub格式
 }
 
-var logger = log.New(os.Stdout, "", 0)
-var err_logger = log.New(os.Stderr, "", 0)
-
-func RequestSubtitle(filePath string, lang string) {
+func RequestSubtitle(filePath string) (found bool) {
 	logger.Println("Start searching subtitles for " + path.Base(filePath))
 	Url, err := url.Parse("https://www.shooter.cn/api/subapi.php")
 
@@ -41,7 +37,7 @@ func RequestSubtitle(filePath string, lang string) {
 	parameters.Add("filehash", hash)
 	parameters.Add("pathinfo", filePath)
 	parameters.Add("format", "json")
-	parameters.Add("lang", lang)
+	parameters.Add("lang", AppConfig.Lang)
 	Url.RawQuery = parameters.Encode()
 
 	req, err := http.NewRequest("POST", Url.String(), bytes.NewBuffer(make([]byte, 0)))
@@ -62,7 +58,9 @@ func RequestSubtitle(filePath string, lang string) {
 		for _, fileinfo := range subinfo.Files {
 			DownloadSubtitle(filePath, fileinfo.Link)
 		}
+		found = true
 	}
+	return
 }
 
 func DownloadSubtitle(filePath string, link string) {
