@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
-	"math"
-	"fmt"
 	"crypto/md5"
+	"fmt"
+	"math"
+	"os"
 )
 
 func ComputeFileHash(filePath string) (hash string) {
@@ -21,10 +21,10 @@ func ComputeFileHash(filePath string) (hash string) {
 		4 * 1024,
 		int64(math.Floor(size / 3 * 2)),
 		int64(math.Floor(size / 3)),
-		int64(size - 8 * 1024)}
+		int64(size - 8*1024)}
 	var samples [4][]byte
 	for i, position := range sample_positions {
-		samples[i] = make([]byte, 4 * 1024)
+		samples[i] = make([]byte, 4*1024)
 		fp.ReadAt(samples[i], position)
 	}
 	for _, sample := range samples {

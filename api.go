@@ -1,15 +1,15 @@
 package main
 
 import (
-	"net/http"
 	"bytes"
-	"io/ioutil"
-	"net/url"
-	"mime"
 	"encoding/json"
-	"os"
 	"io"
+	"io/ioutil"
 	"log"
+	"mime"
+	"net/http"
+	"net/url"
+	"os"
 	"path"
 )
 

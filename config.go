@@ -9,6 +9,11 @@ type Config struct {
 	Watch string
 }
 
+const default_config = `# shooter-subtitle-worker 默认配置文件
+# 使用 shooter-subtitle-worker echo_example_config > config.yaml 来保存
+watch: "path/to/watch"
+`
+
 func ReadConfig(configFilePath string) (config Config) {
 	logger.Println("Using config file: " + configFilePath)
 	configData, err := ioutil.ReadFile(configFilePath)
@@ -20,4 +25,8 @@ func ReadConfig(configFilePath string) (config Config) {
 		panic(yaml_err)
 	}
 	return
+}
+
+func PrintDefaultConfig() {
+	logger.Println(default_config)
 }
