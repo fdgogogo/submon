@@ -32,7 +32,7 @@ func RequestSubtitle(filePath string, lang string) {
 	Url, err := url.Parse("https://www.shooter.cn/api/subapi.php")
 
 	if err != nil {
-
+		err_logger.Println(err)
 	}
 
 	hash := ComputeFileHash(filePath)
