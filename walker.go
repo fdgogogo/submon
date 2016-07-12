@@ -93,6 +93,12 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 			return nil
 		}
 
+		if record.FailedTimes >= *maxRetry {
+			// 忽略重试超过一定次数的文件
+			record.Save()
+			return nil
+		}
+
 		if DB.NewRecord(record) {
 			new++
 		} else {

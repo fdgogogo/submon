@@ -26,6 +26,7 @@ var (
 	watch = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
 	targetDir = watch.Flag("dir", "target dir").Short('d').String()
 	//fullScan = watch.Flag("full-scan", "should perform full scan at target dir").Short("f").Default(true).Bool()
+	maxRetry = watch.Flag("max-retry", "Max retry before give up").Default("3").Int()
 	configFile = watch.Flag("config-file", "config file path").Default("~/.config/submon/config.yaml").String()
 	exampleConfig = app.Command("example_config", "show example configuration")
 )
