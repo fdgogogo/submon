@@ -56,13 +56,22 @@ var videoFormats = []interface{}{
 
 var videoFormatsSet = mapset.NewSetFromSlice(videoFormats)
 
-func WalkDir(dir string) {
+func WalkDir(dir string) (total int, video int, modified int, new int) {
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		ext := filepath.Ext(path)
-		exists := videoFormatsSet.Contains(ext)
-		if exists {
+		isVideoFile := videoFormatsSet.Contains(ext)
+
+		if isVideoFile {
+			video++
 			record := CreateOrUpdateRecord(path, f)
+
 			if !record.FoundSubtitle || record.FileModifiedAt != f.ModTime() {
+				if DB.NewRecord(record) {
+					new++
+				} else {
+					modified++
+				}
+
 				record.FileModifiedAt = f.ModTime()
 				now := time.Now()
 				//if record.LastSeenAt - time.Now()
@@ -77,14 +86,15 @@ func WalkDir(dir string) {
 				}
 			}
 			DB.Save(&record)
-		} else {
-
 		}
+		total++
 		return nil
+
 	})
 	if err != nil {
 		fmt.Println(err)
 	}
+	return
 }
 
 func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord ScannedFile) {

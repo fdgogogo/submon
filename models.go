@@ -14,4 +14,3 @@ type ScannedFile struct {
 	FoundSubtitle  bool
 	FailedTimes    int
 }
-

@@ -18,22 +18,22 @@ lang: chn
 `
 
 func ReadConfigFile(configFilePath string) (config Config) {
-	logger.Println("Using config file: " + configFilePath)
+	logger.Info("Using config file: " + configFilePath)
 
 	var configData []byte
 	var err error
 
 	if configFilePath == "" {
-		logger.Println("No config file specified, using default config.")
+		logger.Info("No config file specified, using default config.")
 		configData = []byte(defaultConfig)
 	} else {
 		configData, err = ioutil.ReadFile(configFilePath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logger.Println("Config file does not exists, using default config.")
+				logger.Info("Config file does not exists, using default config.")
 				configData = []byte(defaultConfig)
 			} else {
-				logger.Println(err)
+				logger.Info(err)
 				//panic(err)
 			}
 		}
@@ -46,6 +46,5 @@ func ReadConfigFile(configFilePath string) (config Config) {
 }
 
 func PrintDefaultConfig() {
-	logger.Println(defaultConfig)
+	logger.Info(defaultConfig)
 }
-

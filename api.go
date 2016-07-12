@@ -24,11 +24,11 @@ type Subinfo struct {
 }
 
 func RequestSubtitle(filePath string) (found bool) {
-	logger.Println("Start searching subtitles for " + path.Base(filePath))
+	logger.Info("Start searching subtitles for " + path.Base(filePath))
 	Url, err := url.Parse("https://www.shooter.cn/api/subapi.php")
 
 	if err != nil {
-		err_logger.Println(err)
+		logger.Error(err)
 	}
 
 	hash := ComputeFileHash(filePath)
@@ -49,7 +49,7 @@ func RequestSubtitle(filePath string) (found bool) {
 	}
 	defer resp.Body.Close()
 
-	logger.Println("Response status:", resp.Status)
+	logger.Info("Response status:", resp.Status)
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var data []Subinfo
@@ -66,7 +66,7 @@ func RequestSubtitle(filePath string) (found bool) {
 func DownloadSubtitle(filePath string, link string) {
 	response, req_err := http.Get(link)
 	if req_err != nil {
-		err_logger.Println(req_err)
+		logger.Error(req_err)
 	}
 	defer response.Body.Close()
 
@@ -76,15 +76,15 @@ func DownloadSubtitle(filePath string, link string) {
 	target := path.Dir(filePath) + "/" + filename
 	out, os_err := os.Create(target)
 	if os_err != nil {
-		err_logger.Println(os_err)
+		logger.Error(os_err)
 	} else {
 		_, dl_err := io.Copy(out, response.Body)
 		if dl_err != nil {
-			err_logger.Println(dl_err)
+			logger.Error(dl_err)
 		}
 	}
 	defer out.Close()
-	logger.Println("Downloaded " + target)
+	logger.Info("Downloaded " + target)
 
 	return
 }
