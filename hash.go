@@ -10,11 +10,11 @@ import (
 func ComputeFileHash(filePath string) (hash string) {
 	fp, err := os.Open(filePath)
 	if err != nil {
-
+		logger.Error(err)
 	}
 	stat, err := fp.Stat()
 	if err != nil {
-
+		logger.Error(err)
 	}
 	size := float64(stat.Size())
 	sample_positions := [4]int64{

@@ -96,7 +96,7 @@ func main() {
 	switch command {
 
 	case download.FullCommand():
-		RequestSubtitle(*downloadFile)
+		//RequestSubtitle(nil, *downloadFile)
 
 	case watch.FullCommand():
 		Watch()
@@ -116,6 +116,7 @@ func Watch() {
 	//(scanned int, modified int, notSeen int)
 	start := time.Now()
 	total, video, modified, new := WalkDir(*targetDir)
+
 	logger.Infof("Found video files:       %d (in %d files)", video, total)
 	logger.Infof("New files:               %d", new)
 	logger.Infof("Modified files:          %d", modified)

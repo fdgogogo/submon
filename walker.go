@@ -59,7 +59,19 @@ var videoFormatsSet = mapset.NewSetFromSlice(videoFormats)
 
 func WalkDir(dir string) (total int, video int, modified int, new int) {
 
-	//tasks := sync.WaitGroup{}
+	const workers = 4
+	tasks := make(chan *ScannedFile)
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			for task := range tasks {
+				logger.Warningf("%s", task)
+				task.RequestSubtitle()
+			}
+			wg.Done()
+		}()
+	}
 
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		total++
@@ -71,10 +83,14 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		}
 		video++
 
+		now := time.Now()
 		record := CreateOrUpdateRecord(path, f)
+		record.LastSeenAt = now
+		record.FileModifiedAt = f.ModTime()
 
 		if !(!record.FoundSubtitle || record.FileModifiedAt != f.ModTime()) {
 			// 忽略已经找到字幕的文件且未修改的文件
+			record.Save()
 			return nil
 		}
 
@@ -83,29 +99,17 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		} else {
 			modified++
 		}
-
-		record.FileModifiedAt = f.ModTime()
-
-		now := time.Now()
-		record.LastSeenAt = now
-
-		found := RequestSubtitle(path)
-
-		if found {
-			record.FoundAt = now
-			record.FoundSubtitle = true
-		} else {
-			record.FailedTimes++
-		}
-
-		DB.Save(&record)
-
+		tasks <- &record
 		return nil
 
 	})
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 	}
+
+	close(tasks)
+	wg.Wait()
+
 	return
 }
 
@@ -116,6 +120,7 @@ func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord ScannedFile) {
 	if fileRecord == (ScannedFile{}) {
 		fileRecord = ScannedFile{
 			ID:             hash,
+			Path:           path,
 			FirstSeenAt:    time.Now(),
 			FileModifiedAt: f.ModTime(),
 			Size:           f.Size(),
