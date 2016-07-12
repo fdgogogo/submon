@@ -111,6 +111,7 @@ func main() {
 }
 
 func Watch() {
+	logger.Notice("Submon watcher started")
 	PrintDBStat()
 	//(scanned int, modified int, notSeen int)
 	start := time.Now()
@@ -118,7 +119,7 @@ func Watch() {
 	logger.Infof("Found video files:       %d (in %d files)", video, total)
 	logger.Infof("New files:               %d", new)
 	logger.Infof("Modified files:          %d", modified)
-	logger.Infof("Scan completed, took %.2f seconds", time.Since(start))
+	logger.Infof("Scan completed, took %.2f seconds", time.Since(start).Seconds())
 }
 
 func PrintDBStat() {
