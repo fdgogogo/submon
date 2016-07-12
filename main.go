@@ -6,23 +6,24 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
+	"os/user"
 )
 
 var (
-	app  = kingpin.New("submon", "").Version("0.1")
+	app = kingpin.New("submon", "").Version("0.1")
 	lang = app.Flag("lang", "language, choice: chn, eng").String()
 
-	download     = app.Command("download", "Download subtitle for specific file")
+	download = app.Command("download", "Download subtitle for specific file")
 	downloadFile = download.Arg("file", "target file path").Required().String()
 
-	watch         = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
-	watchDir      = watch.Flag("dir", "target dir").Short('d').String()
-	configFile    = watch.Flag("config-file", "config file path").Default("~/.config/submon/config.yaml").String()
+	watch = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
+	watchDir = watch.Flag("dir", "target dir").Short('d').String()
+	configFile = watch.Flag("config-file", "config file path").Default("~/.config/submon/config.yaml").String()
 	exampleConfig = app.Command("example_config", "show example configuration")
 )
 
 var (
-	logger     = log.New(os.Stdout, "", 0)
+	logger = log.New(os.Stdout, "", 0)
 	err_logger = log.New(os.Stderr, "", 0)
 )
 
@@ -31,9 +32,23 @@ var AppConfig Config
 
 func init() {
 	var err error
-	home := "~/.submon/"
-	os.MkdirAll(home, 0666)
-	DB, err = gorm.Open("sqlite3", home + "db.sqlite")
+	usr, err := user.Current()
+	if err != nil {
+		err_logger.Fatal(err)
+	}
+
+	home := usr.HomeDir + "/.submon/"
+	//TODO: Windows
+
+	err = os.MkdirAll(home, 0755)
+
+	if err != nil {
+		err_logger.Fatal(err)
+	}
+
+	dbPath := home + "db.sqlite"
+	DB, err = gorm.Open("sqlite3", dbPath)
+
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -47,7 +62,7 @@ func main() {
 
 	parsed := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	AppConfig = ReadConfig(*configFile)
+	AppConfig = ReadConfigFile(*configFile)
 	if *lang != "" {
 		AppConfig.Lang = *lang
 	}

@@ -17,7 +17,7 @@ watch: path/to/watch
 lang: chn
 `
 
-func ReadConfig(configFilePath string) (config Config) {
+func ReadConfigFile(configFilePath string) (config Config) {
 	logger.Println("Using config file: " + configFilePath)
 
 	var configData []byte
@@ -48,3 +48,4 @@ func ReadConfig(configFilePath string) (config Config) {
 func PrintDefaultConfig() {
 	logger.Println(defaultConfig)
 }
+
