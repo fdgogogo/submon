@@ -11,8 +11,8 @@ type Config struct {
 	Lang  string
 }
 
-const defaultConfig = `# shooter-subtitle-worker 默认配置文件
-# 使用 shooter-subtitle-worker echo_example_config > config.yaml 来保存
+const defaultConfig = `# submon 默认配置文件
+# 使用 submon echo_example_config > config.yaml 来保存
 watch: path/to/watch
 lang: chn
 `

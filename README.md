@@ -1,6 +1,6 @@
-# shooter-subtitle-worker
+# submon
 
-Go 语言实现的射手网字幕下载器 (WIP)
+Go 语言实现的射手网字幕下载器, 支持文件夹监控 (WIP)
 
 ## TODO
 

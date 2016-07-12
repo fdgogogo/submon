@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	app  = kingpin.New("shooter-subtitle-worker", "").Version("0.1")
+	app  = kingpin.New("submon", "").Version("0.1")
 	lang = app.Flag("lang", "language, choice: chn, eng").String()
 
 	download     = app.Command("download", "Download subtitle for specific file")
@@ -17,7 +17,7 @@ var (
 
 	watch         = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
 	watchDir      = watch.Flag("dir", "target dir").Short('d').String()
-	configFile    = watch.Flag("config-file", "config file path").Default("~/.config/shooter-subtitle-worker/config.yaml").String()
+	configFile    = watch.Flag("config-file", "config file path").Default("~/.config/submon/config.yaml").String()
 	exampleConfig = app.Command("example_config", "show example configuration")
 )
 
@@ -31,8 +31,9 @@ var AppConfig Config
 
 func init() {
 	var err error
-	DB, err = gorm.Open("sqlite3", "test.sqlite")
-	//DB.LogMode(true)
+	home := "~/.submon/"
+	os.MkdirAll(home, 0666)
+	DB, err = gorm.Open("sqlite3", home + "db.sqlite")
 	if err != nil {
 		panic("failed to connect database")
 	}
