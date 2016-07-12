@@ -44,7 +44,7 @@ func (self *ScannedFile) Save() {
 func (self *ScannedFile) RequestSubtitle() {
 	var found bool
 
-	logger.Info("Start searching subtitles for " + path.Base(self.Path))
+	logger.Notice("Start searching subtitles for " + path.Base(self.Path))
 	Url, err := url.Parse("https://www.shooter.cn/api/subapi.php")
 
 	if err != nil {
@@ -69,7 +69,7 @@ func (self *ScannedFile) RequestSubtitle() {
 	}
 	defer resp.Body.Close()
 
-	logger.Info("Response status:", resp.Status)
+	logger.Debug("Response status:", resp.Status)
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var data []SubInfo

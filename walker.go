@@ -66,7 +66,6 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		wg.Add(1)
 		go func() {
 			for task := range tasks {
-				logger.Warningf("%s", task)
 				task.RequestSubtitle()
 			}
 			wg.Done()
