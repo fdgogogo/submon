@@ -15,34 +15,34 @@ func Watch() {
 	}
 
 	done := make(chan bool)
+	taskQueue := NewTaskQueue().Run()
 
 	// Process events
 	go func() {
 		for {
 			select {
 			case ev := <-watcher.Event:
-				EventFunc(ev, watcher)
-
-				logger.Debug("event:", ev)
+				EventFunc(ev, watcher, taskQueue)
+			//logger.Debug("event:", ev)
 			case err := <-watcher.Error:
 				logger.Error("error:", err)
 			}
 		}
 	}()
 
-	for _, wc := range AppConfig.Watch {
+	for _, wc := range AppConfig.Watch.Dirs {
 		path, err := homedir.Expand(wc.Path)
 		if err != nil {
 			logger.Fatal(err)
 		}
 		if wc.Recursive {
-			logger.Debug("Start watching dir " + path + "(Recursive)")
+			logger.Notice("Start watching dir " + path + "(Recursive)")
 			paths := ListSubDir(path)
 			for _, p := range paths {
 				err = watcher.Watch(p)
 			}
 		} else {
-			logger.Debug("Start watching dir " + path)
+			logger.Notice("Start watching dir " + path)
 			err = watcher.Watch(path)
 
 		}
@@ -58,7 +58,7 @@ func Watch() {
 	watcher.Close()
 }
 
-func EventFunc(ev *fsnotify.FileEvent, watcher *fsnotify.Watcher) {
+func EventFunc(ev *fsnotify.FileEvent, watcher *fsnotify.Watcher, tasksQueue chan *VideoFile) {
 	if ev.IsCreate() {
 		stat, err := os.Stat(ev.Name)
 		if err != nil {
@@ -68,7 +68,13 @@ func EventFunc(ev *fsnotify.FileEvent, watcher *fsnotify.Watcher) {
 			logger.Debug("Start watching dir " + ev.Name)
 			watcher.Watch(ev.Name)
 		} else if IsVideoFile(ev.Name) {
-
+			if ev.IsCreate() {
+				logger.Info("Found new video file:", ev.Name)
+			}
+			record, shouldRequest := CreateOrUpdateRecord(ev.Name, stat)
+			if shouldRequest {
+				record.RequestSubtitle()
+			}
 		}
 	}
 }

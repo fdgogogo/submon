@@ -11,15 +11,19 @@ import (
 const comments = `# submon 默认配置文件
 # 使用 submon echo_example_config > config.yaml 来保存`
 
-type WatchConfig struct {
+type WatchDir struct {
 	Path       string
-	MaxRetry   int
 	NoFullScan bool
 	Recursive  bool
 }
 
+type WatchConfig struct {
+	Dirs     []WatchDir
+	MaxRetry int
+}
+
 type Config struct {
-	Watch     []WatchConfig
+	Watch     WatchConfig
 	Lang      string
 	Workers   int
 	LogFormat string
@@ -33,14 +37,15 @@ func NewConfig() (config Config) {
 	config.LogFormat = "color"
 	config.LogLevel = "INFO"
 	config.Debug = false
+	config.Watch.MaxRetry = 3
 	return
 }
 
 func ExampleConfig() (y string) {
 	c := NewConfig()
-	c.Watch = []WatchConfig{
-		WatchConfig{Path: "path/to/watch", MaxRetry: 3, NoFullScan: false, Recursive: false},
-		WatchConfig{Path: "another/path/to/watch", MaxRetry: 3, NoFullScan: true, Recursive: true}}
+	c.Watch.Dirs = []WatchDir{
+		WatchDir{Path: "path/to/watch", NoFullScan: false, Recursive: false},
+		WatchDir{Path: "another/path/to/watch", NoFullScan: true, Recursive: true}}
 	d, _ := yaml.Marshal(&c)
 	y = comments + "\n" + string(d)
 	return

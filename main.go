@@ -133,21 +133,19 @@ func UpdateAppConfig(in Config) (out Config) {
 		out.LogFormat = "mono"
 	}
 
+	if *maxRetry != 0 {
+		out.Watch.MaxRetry = *maxRetry
+	}
+
 	out.Debug = *debug
 
 	if *targetDir != "" {
-		wc := WatchConfig{Path: *targetDir, NoFullScan: *noFullScan, MaxRetry: *maxRetry}
-		out.Watch = []WatchConfig{wc}
-	}
-
-	if *maxRetry != 0 {
-		for _, w := range out.Watch {
-			w.MaxRetry = *maxRetry
-		}
+		wc := WatchDir{Path: *targetDir, NoFullScan: *noFullScan}
+		out.Watch.Dirs = []WatchDir{wc}
 	}
 
 	if *noFullScan {
-		for _, w := range out.Watch {
+		for _, w := range out.Watch.Dirs {
 			w.NoFullScan = true
 		}
 	}
@@ -160,7 +158,7 @@ func WatchCommand() {
 	PrintDBStat()
 	//(scanned int, modified int, notSeen int)
 	start := time.Now()
-	for _, wc := range AppConfig.Watch {
+	for _, wc := range AppConfig.Watch.Dirs {
 
 		total, video, modified, new := WalkDir(wc.Path)
 		logger.Infof("Found video files:       %d (in %d files)", video, total)
@@ -168,7 +166,7 @@ func WatchCommand() {
 		logger.Infof("Modified files:          %d", modified)
 		logger.Infof("Scan completed, took %.2f seconds", time.Since(start).Seconds())
 	}
-	//Watch()
+	Watch()
 }
 
 func PrintDBStat() {

@@ -63,12 +63,13 @@ func IsVideoFile(p string) (b bool) {
 }
 
 func WalkDir(dir string) (total int, video int, modified int, new int) {
-	tasks := NewWorkerGroup().Run()
-	logger.Debugf("%s", tasks)
+	taskQueue := NewTaskQueue().Run()
+	logger.Debugf("%s", taskQueue)
 	absDir, err := homedir.Expand(dir)
 	if err != nil {
 		logger.Fatal(err)
 	}
+
 	err = filepath.Walk(absDir, func(path string, f os.FileInfo, err error) error {
 		total++
 		isVideoFile := IsVideoFile(path)
@@ -78,42 +79,32 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		}
 		video++
 
-		now := time.Now()
-		record := CreateOrUpdateRecord(path, f)
-		record.LastSeenAt = now
-		record.FileModifiedAt = f.ModTime()
-		if record.FoundSubtitle && record.FileModifiedAt == f.ModTime() {
-			// 忽略已经找到字幕的文件且未修改的文件
-			logger.Debugf("%s already has subtitle, skipping", f.Name())
-			record.Save()
-			return nil
+		record, shouldRequest := CreateOrUpdateRecord(path, f)
+		if shouldRequest {
+			if DB.NewRecord(record) {
+				new++
+			} else {
+				modified++
+			}
+			taskQueue <- &record
 		}
-
-		if record.FailedTimes >= *maxRetry {
-			// 忽略重试超过一定次数的文件
-			logger.Debugf("%s failed too many times, skipping", f.Name())
-			record.Save()
-			return nil
-		}
-
-		if DB.NewRecord(record) {
-			new++
-		} else {
-			modified++
-		}
-		tasks <- &record
 		return nil
 
 	})
+
 	if err != nil {
 		logger.Error(err)
 	}
+	close(taskQueue)
 
 	return
 }
 
-func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord VideoFile) {
+func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord VideoFile, shouldRequest bool) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(path)))
+	now := time.Now()
+	shouldRequest = true
+
 	DB.Where("id = ?", hash).First(&fileRecord)
 
 	if fileRecord == (VideoFile{}) {
@@ -128,5 +119,23 @@ func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord VideoFile) {
 		}
 		DB.Create(&fileRecord)
 	}
+
+	fileRecord.LastSeenAt = now
+	fileRecord.FileModifiedAt = f.ModTime()
+
+	if fileRecord.FoundSubtitle && fileRecord.FileModifiedAt == f.ModTime() {
+		// 忽略已经找到字幕的且未修改的文件
+		logger.Debugf("%s already has subtitle, skipping", f.Name())
+		shouldRequest = false
+	}
+
+	if fileRecord.FailedTimes >= AppConfig.Watch.MaxRetry {
+		// 忽略重试超过一定次数的文件
+		logger.Debugf("%s failed too many times, skipping", f.Name())
+		shouldRequest = false
+	}
+
+	fileRecord.Save()
+
 	return
 }
