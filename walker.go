@@ -86,15 +86,16 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		record := CreateOrUpdateRecord(path, f)
 		record.LastSeenAt = now
 		record.FileModifiedAt = f.ModTime()
-
-		if !(!record.FoundSubtitle || record.FileModifiedAt != f.ModTime()) {
+		if (record.FoundSubtitle && record.FileModifiedAt == f.ModTime()) {
 			// 忽略已经找到字幕的文件且未修改的文件
+			logger.Debugf("%s already has subtitle, skipping", f.Name())
 			record.Save()
 			return nil
 		}
 
 		if record.FailedTimes >= *maxRetry {
 			// 忽略重试超过一定次数的文件
+			logger.Debugf("%s failed too many times, skipping", f.Name())
 			record.Save()
 			return nil
 		}
