@@ -57,6 +57,11 @@ var videoFormats = []interface{}{
 
 var videoFormatsSet = mapset.NewSetFromSlice(videoFormats)
 
+func IsVideoFile(p string) (b bool) {
+	ext := filepath.Ext(p)
+	return videoFormatsSet.Contains(ext)
+}
+
 func WalkDir(dir string) (total int, video int, modified int, new int) {
 
 	const workers = 4
@@ -74,8 +79,7 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		total++
-		ext := filepath.Ext(path)
-		isVideoFile := videoFormatsSet.Contains(ext)
+		isVideoFile := IsVideoFile(path)
 
 		if !isVideoFile {
 			return nil
