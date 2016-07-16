@@ -6,8 +6,8 @@ import (
 	"github.com/op/go-logging"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
-	"os/user"
 	"time"
+	"github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -44,6 +44,31 @@ var DB *gorm.DB
 var AppConfig Config
 var command string
 
+func main() {
+	app.HelpFlag.Short('h')
+	kingpin.Version("0.1")
+	configureApp()
+
+	if *lang != "" {
+		AppConfig.Lang = *lang
+	}
+
+	switch command {
+
+	case download.FullCommand():
+	//RequestSubtitle(nil, *downloadFile)
+
+	case watch.FullCommand():
+		WatchCommand()
+
+	case exampleConfig.FullCommand():
+		PrintDefaultConfig()
+
+	default:
+		kingpin.Usage()
+
+	}
+}
 func configureApp() {
 	var backend logging.Backend
 
@@ -66,12 +91,8 @@ func configureApp() {
 
 	// 创建项目文件路径
 	var err error
-	usr, err := user.Current()
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	home := usr.HomeDir + "/.submon/"
+	usrHome, err := homedir.Dir()
+	home := usrHome + "/.submon/"
 	// TODO: Windows
 
 	err = os.MkdirAll(home, 0755)
@@ -92,33 +113,6 @@ func configureApp() {
 	}
 	DB.AutoMigrate(&ScannedFile{})
 }
-
-func main() {
-	app.HelpFlag.Short('h')
-	kingpin.Version("0.1")
-	configureApp()
-
-	if *lang != "" {
-		AppConfig.Lang = *lang
-	}
-
-	switch command {
-
-	case download.FullCommand():
-	//RequestSubtitle(nil, *downloadFile)
-
-	case watch.FullCommand():
-		Watch()
-
-	case exampleConfig.FullCommand():
-		PrintDefaultConfig()
-
-	default:
-		kingpin.Usage()
-
-	}
-}
-
 // command-line flag override
 func UpdateAppConfig(in Config) (out Config) {
 	out = in
@@ -160,7 +154,7 @@ func UpdateAppConfig(in Config) (out Config) {
 	return
 }
 
-func Watch() {
+func WatchCommand() {
 	logger.Notice("Submon watcher started")
 	PrintDBStat()
 	//(scanned int, modified int, notSeen int)
@@ -171,6 +165,7 @@ func Watch() {
 	logger.Infof("New files:               %d", new)
 	logger.Infof("Modified files:          %d", modified)
 	logger.Infof("Scan completed, took %.2f seconds", time.Since(start).Seconds())
+	Watch()
 }
 
 func PrintDBStat() {
