@@ -8,27 +8,31 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
 	"time"
+	"bufio"
+	"strings"
 )
 
 var (
 	app = kingpin.New("submon", "").Version("0.1")
 
-	debug   = app.Flag("debug", "Enable debug mode.").Bool()
-	mono    = app.Flag("mono", "Monochrome logging output").Bool()
+	debug = app.Flag("debug", "Enable debug mode.").Bool()
+	mono = app.Flag("mono", "Monochrome logging output").Bool()
 	verbose = app.Flag("verbose", "Enable verbose mode.").Bool()
-	quiet   = app.Flag("quiet", "Enable quiet mode.").Bool()
+	quiet = app.Flag("quiet", "Enable quiet mode.").Bool()
 
 	lang = app.Flag("lang", "language, choice: chn, eng").String()
 
-	download     = app.Command("download", "Download subtitle for specific file")
+	download = app.Command("download", "Download subtitle for specific file")
 	downloadFile = download.Arg("file", "target file path").Required().String()
 
-	watch         = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
-	targetDir     = watch.Flag("dir", "target dir").Short('d').String()
-	noFullScan    = watch.Flag("--no-full-scan", "should perform full scan at target dir").Bool()
-	maxRetry      = watch.Flag("max-retry", "Max retry before give up").Default("3").Int()
-	configFile    = watch.Flag("config-file", "config file path, default to ~/.submon/config.yaml").Default("~/.submon/config.yaml").String()
+	watch = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
+	targetDir = watch.Flag("dir", "target dir").Short('d').String()
+	noFullScan = watch.Flag("--no-full-scan", "should perform full scan at target dir").Bool()
+	maxRetry = watch.Flag("max-retry", "Max retry before give up").Default("3").Int()
+	configFile = watch.Flag("config-file", "config file path, default to ~/.submon/config.yaml").Default("~/.submon/config.yaml").String()
 	exampleConfig = app.Command("example_config", "show example configuration")
+
+	reset = app.Command("reset", "Reset database")
 )
 
 var (
@@ -37,7 +41,7 @@ var (
 
 const (
 	coloredFormat = `%{color}%{time:15:04:05.000} ▶ %{level:.4s} %{color:reset} %{message}`
-	monoFormat    = `%{time:15:04:05.000} ▶ %{level:.4s} %{message}`
+	monoFormat = `%{time:15:04:05.000} ▶ %{level:.4s} %{message}`
 )
 
 var DB *gorm.DB
@@ -63,6 +67,9 @@ func main() {
 
 	case exampleConfig.FullCommand():
 		PrintDefaultConfig()
+
+	case reset.FullCommand():
+		ResetCommand()
 
 	default:
 		kingpin.Usage()
@@ -173,4 +180,24 @@ func PrintDBStat() {
 	var count int
 	DB.Model(&VideoFile{}).Count(&count)
 	logger.Infof("Scanned files: %d", count)
+}
+
+func ResetCommand() {
+	reader := bufio.NewReader(os.Stdin)
+	print("This command will erase all file records, which means next time submon launches, it will try to re-download subtitle for all video files in configured dir. Are you sure? [y/N]")
+
+	text, _ := reader.ReadString('\n')
+
+	if strings.ToLower(strings.Trim(text, "\n")) == "y" {
+		dbFile, err := homedir.Expand("~/.submon/db.sqlite")
+		if err != nil {
+			logger.Fatal(err)
+		}
+		err = os.Remove(dbFile)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		logger.Notice("Reseted")
+	}
+
 }

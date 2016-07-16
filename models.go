@@ -74,9 +74,10 @@ func (self *VideoFile) RequestSubtitle() {
 
 	var data []SubInfo
 	json.Unmarshal(body, &data)
+	logger.Debugf("%s subtitles found", len(data))
 	for _, subinfo := range data {
 		for _, fileinfo := range subinfo.Files {
-			DownloadSubtitle(self.Path, fileinfo.Link)
+			go DownloadSubtitle(self.Path, fileinfo.Link)
 		}
 		found = true
 	}
@@ -99,8 +100,8 @@ func DownloadSubtitle(filePath string, link string) {
 
 	_, params, _ := mime.ParseMediaType(response.Header["Content-Disposition"][0])
 	filename := params["filename"] // set to "foo.png"
-
 	target := path.Dir(filePath) + "/" + filename
+	logger.Debugf("%s", response.Body)
 	out, os_err := os.Create(target)
 	if os_err != nil {
 		logger.Error(os_err)
