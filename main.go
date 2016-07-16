@@ -25,9 +25,9 @@ var (
 
 	watch = app.Command("watch", "Watch direcotry (and children) for change, download subtitle automatically when new file added.")
 	targetDir = watch.Flag("dir", "target dir").Short('d').String()
-	//fullScan = watch.Flag("full-scan", "should perform full scan at target dir").Short("f").Default(true).Bool()
+	noFullScan = watch.Flag("--no-full-scan", "should perform full scan at target dir").Bool()
 	maxRetry = watch.Flag("max-retry", "Max retry before give up").Default("3").Int()
-	configFile = watch.Flag("config-file", "config file path").Default("~/.config/submon/config.yaml").String()
+	configFile = watch.Flag("config-file", "config file path, default to ~/.submon/config.yaml").Default("~/.submon/config.yaml").String()
 	exampleConfig = app.Command("example_config", "show example configuration")
 )
 
@@ -44,31 +44,25 @@ var DB *gorm.DB
 var AppConfig Config
 var command string
 
-func init() {
-	// Logging
+func configureApp() {
 	var backend logging.Backend
-	backend = logging.NewLogBackend(os.Stderr, "", 0)
 
-	if *mono {
+	command = kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	AppConfig = ReadConfigFile(*configFile)
+	AppConfig = UpdateAppConfig(AppConfig)
+
+	// Logging
+	backend = logging.NewLogBackend(os.Stderr, "", 0)
+	switch AppConfig.LogFormat {
+	case "mono":
 		backend = logging.NewBackendFormatter(backend, logging.MustStringFormatter(monoFormat))
-	} else {
+	case "color":
 		backend = logging.NewBackendFormatter(backend, logging.MustStringFormatter(coloredFormat))
 	}
-
 	leveledBackend := logging.AddModuleLevel(backend)
-
-	if *verbose {
-		leveledBackend.SetLevel(logging.DEBUG, "submon")
-	} else if *quiet {
-		leveledBackend.SetLevel(logging.WARNING, "submon")
-	} else {
-		leveledBackend.SetLevel(logging.INFO, "submon")
-	}
-
+	leveledBackend.SetLevel(logging.GetLevel(AppConfig.LogLevel), "submon")
 	logging.SetBackend(leveledBackend)
-
-	// 爬取参数
-	command = kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// 创建项目文件路径
 	var err error
@@ -102,8 +96,8 @@ func init() {
 func main() {
 	app.HelpFlag.Short('h')
 	kingpin.Version("0.1")
+	configureApp()
 
-	AppConfig = ReadConfigFile(*configFile)
 	if *lang != "" {
 		AppConfig.Lang = *lang
 	}
@@ -123,6 +117,47 @@ func main() {
 		kingpin.Usage()
 
 	}
+}
+
+// command-line flag override
+func UpdateAppConfig(in Config) (out Config) {
+	out = in
+	if *lang != "" {
+		out.Lang = *lang
+	}
+
+	if *verbose {
+		out.LogLevel = "DBEUG"
+	}
+
+	if *quiet {
+		out.LogLevel = "NOTICE"
+	}
+
+	if *mono {
+		out.LogFormat = "mono"
+	}
+
+	out.Debug = *debug
+
+	if *targetDir != "" {
+		wc := WatchConfig{Path:*targetDir, NoFullScan:*noFullScan, MaxRetry:*maxRetry}
+		out.Watch = []WatchConfig{wc}
+	}
+
+	if *maxRetry != 0 {
+		for _, w := range out.Watch {
+			w.MaxRetry = *maxRetry
+		}
+	}
+
+	if *noFullScan {
+		for _, w := range out.Watch {
+			w.NoFullScan = true
+		}
+	}
+
+	return
 }
 
 func Watch() {
