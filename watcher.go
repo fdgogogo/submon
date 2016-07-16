@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/howeyc/fsnotify"
 	"github.com/mitchellh/go-homedir"
-	"path/filepath"
 	"os"
+	"path/filepath"
 )
 
 func Watch() {
@@ -21,20 +21,11 @@ func Watch() {
 		for {
 			select {
 			case ev := <-watcher.Event:
-				if ev.IsCreate() {
-					stat, err := os.Stat(ev.Name)
-					if err != nil {
-						logger.Error(err)
-					}
-					if stat.IsDir() {
-						logger.Debug("Start watching dir " + ev.Name)
-						watcher.Watch(ev.Name)
-					}
-				}
+				EventFunc(ev, watcher)
 
 				logger.Debug("event:", ev)
 			case err := <-watcher.Error:
-				logger.Debug("error:", err)
+				logger.Error("error:", err)
 			}
 		}
 	}()
@@ -65,6 +56,21 @@ func Watch() {
 
 	/* ... do stuff ... */
 	watcher.Close()
+}
+
+func EventFunc(ev *fsnotify.FileEvent, watcher *fsnotify.Watcher) {
+	if ev.IsCreate() {
+		stat, err := os.Stat(ev.Name)
+		if err != nil {
+			logger.Error(err)
+		}
+		if stat.IsDir() {
+			logger.Debug("Start watching dir " + ev.Name)
+			watcher.Watch(ev.Name)
+		} else if IsVideoFile(ev.Name) {
+
+		}
+	}
 }
 
 func ListSubDir(dir string) (dirs []string) {

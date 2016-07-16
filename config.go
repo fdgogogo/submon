@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
-	"fmt"
-	"github.com/mitchellh/go-homedir"
 )
 
 const comments = `# submon 默认配置文件
@@ -21,6 +21,7 @@ type WatchConfig struct {
 type Config struct {
 	Watch     []WatchConfig
 	Lang      string
+	Workers   int
 	LogFormat string
 	LogLevel  string
 	Debug     bool
@@ -28,6 +29,7 @@ type Config struct {
 
 func NewConfig() (config Config) {
 	config.Lang = "chn"
+	config.Workers = 4
 	config.LogFormat = "color"
 	config.LogLevel = "INFO"
 	config.Debug = false
@@ -37,8 +39,8 @@ func NewConfig() (config Config) {
 func ExampleConfig() (y string) {
 	c := NewConfig()
 	c.Watch = []WatchConfig{
-		WatchConfig{Path:"path/to/watch", MaxRetry: 3, NoFullScan:false, Recursive:false},
-		WatchConfig{Path:"another/path/to/watch", MaxRetry:3, NoFullScan:true, Recursive:true}}
+		WatchConfig{Path: "path/to/watch", MaxRetry: 3, NoFullScan: false, Recursive: false},
+		WatchConfig{Path: "another/path/to/watch", MaxRetry: 3, NoFullScan: true, Recursive: true}}
 	d, _ := yaml.Marshal(&c)
 	y = comments + "\n" + string(d)
 	return

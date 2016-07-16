@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-type ScannedFile struct {
+type VideoFile struct {
 	// Model
 	ID             string `gorm:"type:char(32);primary_key"`
 	Path           string
@@ -37,11 +37,11 @@ type SubInfo struct {
 	Files []FileInfo // 包含文件信息的Array。 注：一个字幕可能会包含多个字幕文件，例如：idx+sub格式
 }
 
-func (self *ScannedFile) Save() {
+func (self *VideoFile) Save() {
 	DB.Save(&self)
 }
 
-func (self *ScannedFile) RequestSubtitle() {
+func (self *VideoFile) RequestSubtitle() {
 	var found bool
 
 	logger.Notice("Start searching subtitles for " + path.Base(self.Path))

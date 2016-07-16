@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"github.com/mitchellh/go-homedir"
+	"testing"
 )
 
 func TestListSubDir(t *testing.T) {

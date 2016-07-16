@@ -4,9 +4,9 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/deckarep/golang-set"
+	"github.com/mitchellh/go-homedir"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 )
 
@@ -63,21 +63,13 @@ func IsVideoFile(p string) (b bool) {
 }
 
 func WalkDir(dir string) (total int, video int, modified int, new int) {
-
-	const workers = 4
-	tasks := make(chan *ScannedFile)
-	var wg sync.WaitGroup
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func() {
-			for task := range tasks {
-				task.RequestSubtitle()
-			}
-			wg.Done()
-		}()
+	tasks := NewWorkerGroup().Run()
+	logger.Debugf("%s", tasks)
+	absDir, err := homedir.Expand(dir)
+	if err != nil {
+		logger.Fatal(err)
 	}
-
-	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+	err = filepath.Walk(absDir, func(path string, f os.FileInfo, err error) error {
 		total++
 		isVideoFile := IsVideoFile(path)
 
@@ -90,7 +82,7 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		record := CreateOrUpdateRecord(path, f)
 		record.LastSeenAt = now
 		record.FileModifiedAt = f.ModTime()
-		if (record.FoundSubtitle && record.FileModifiedAt == f.ModTime()) {
+		if record.FoundSubtitle && record.FileModifiedAt == f.ModTime() {
 			// 忽略已经找到字幕的文件且未修改的文件
 			logger.Debugf("%s already has subtitle, skipping", f.Name())
 			record.Save()
@@ -117,18 +109,15 @@ func WalkDir(dir string) (total int, video int, modified int, new int) {
 		logger.Error(err)
 	}
 
-	close(tasks)
-	wg.Wait()
-
 	return
 }
 
-func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord ScannedFile) {
+func CreateOrUpdateRecord(path string, f os.FileInfo) (fileRecord VideoFile) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(path)))
 	DB.Where("id = ?", hash).First(&fileRecord)
 
-	if fileRecord == (ScannedFile{}) {
-		fileRecord = ScannedFile{
+	if fileRecord == (VideoFile{}) {
+		fileRecord = VideoFile{
 			ID:             hash,
 			Path:           path,
 			FirstSeenAt:    time.Now(),
